@@ -46,7 +46,7 @@ def prepare_response(
     target_dir: TemporaryDirectory,
 ) -> Response:
     if not result:
-        raise HTTPException(status_code=502, detail="No media found")
+        raise HTTPException(status_code=404, detail="No media found")
     if isinstance(result, Path):
         logger.info(f"[{video_url}] Sending file response [{result}]")
         return FileResponse(result, background=BackgroundTask(target_dir.cleanup))
