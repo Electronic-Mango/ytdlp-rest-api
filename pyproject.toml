@@ -26,4 +26,5 @@ ignore = [
     "D1",     # Ignore all missing docstring rules
     "D203",   # Conflicts with D211
     "D212",   # Conflicts with D213
+    "TC003",  # Just unnecessary
 ]
