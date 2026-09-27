@@ -19,7 +19,7 @@ from yt_dlp import YoutubeDL, match_filter_func
 load_dotenv()
 
 DEFAULT_MAX_DURATION = getenv("MAX_DURATION")
-DEFAULT_MAX_SIZE = getenv("MAX_SIZE")
+DEFAULT_MAX_FILESIZE = getenv("MAX_FILESIZE")
 DEFAULT_FORMAT = getenv("FORMAT")
 DEFAULT_FORMAT_SORT = getenv("FORMAT_SORT")
 
@@ -59,7 +59,7 @@ app = FastAPI(lifespan=lifespan)
 def download(
     video_url: str,
     max_duration: int | None = DEFAULT_MAX_DURATION,
-    max_size_mb: int | None = DEFAULT_MAX_SIZE,
+    max_filesize_mb: int | None = DEFAULT_MAX_FILESIZE,
     format: str | None = DEFAULT_FORMAT,
     format_sort: str | None = DEFAULT_FORMAT_SORT,
 ) -> Response:
@@ -68,8 +68,8 @@ def download(
     target_dir = TemporaryDirectory(prefix=f"{request_id}-", dir=TEMP_ROOT)
     target_path = Path(target_dir.name) / request_id
     try:
-        params = video_params(max_duration, max_size_mb, format, format_sort)
-        result = download_file(video_url, target_path, params, max_size_mb)
+        params = video_params(max_duration, max_filesize_mb, format, format_sort)
+        result = download_file(video_url, target_path, params, max_filesize_mb)
         return prepare_response(video_url, result, target_dir)
     except Exception:
         target_dir.cleanup()
@@ -93,12 +93,12 @@ def prepare_response(
 
 def video_params(
     max_duration: int | None,
-    max_size_mb: int | None,
+    max_filesize_mb: int | None,
     format: str | None,
     format_sort: str | None,
 ) -> dict[str, Any]:
     params = {}
-    if match_filter := prepare_match_filter(max_duration, max_size_mb):
+    if match_filter := prepare_match_filter(max_duration, max_filesize_mb):
         params["match_filter"] = match_filter_func(match_filter)
     if format is not None:
         params["format"] = format
@@ -107,10 +107,10 @@ def video_params(
     return params
 
 
-def prepare_match_filter(max_duration: int | None, max_size_mb: int | None) -> str:
+def prepare_match_filter(max_duration: int | None, max_filesize_mb: int | None) -> str:
     match_filter = [
         f"duration<={max_duration}" if max_duration else None,
-        f"filesize<={max_size_mb}MB" if max_size_mb else None,
+        f"filesize<={max_filesize_mb}MB" if max_filesize_mb else None,
     ]
     return " & ".join(filter(None, match_filter))
 
@@ -119,7 +119,7 @@ def download_file(
     video_url: str,
     target_path: Path,
     params: dict[str, Any],
-    max_size_mb: int | None = None,
+    max_filesize_mb: int | None = None,
 ) -> Path | str | None:
     result: Path | None = None
 
@@ -134,10 +134,10 @@ def download_file(
     }
     with YoutubeDL(final_params) as ytdl:
         info = ytdl.extract_info(video_url, download=True)
-    if result and result.is_file() and size_matches(result.stat().st_size, max_size_mb):
+    if result and result.is_file() and size_matches(result, max_filesize_mb):
         return result
     return info.get("thumbnail")
 
 
-def size_matches(size_bytes: int, max_size_mb: int | None) -> bool:
-    return max_size_mb is None or (size_bytes / 1_000_000) <= max_size_mb
+def size_matches(file: Path, max_size: int | None) -> bool:
+    return max_size is None or (file.stat().st_size / 1_000_000) <= max_size
