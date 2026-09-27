@@ -68,7 +68,7 @@ def download(
     target_dir = TemporaryDirectory(prefix=f"{request_id}-", dir=TEMP_ROOT)
     target_path = Path(target_dir.name) / request_id
     try:
-        params = video_params(max_duration, format, format_sort)
+        params = video_params(max_duration, format, format_sort, max_size_mb)
         result = download_file(video_url, target_path, params, max_size_mb)
         return prepare_response(video_url, result, target_dir)
     except Exception:
@@ -95,19 +95,28 @@ def video_params(
     max_duration: int | None,
     format: str | None,
     format_sort: str | None,
+    max_size_mb: int | None,
 ) -> dict[str, Any]:
     params = {}
     if format is not None:
         params["format"] = format
     if format_sort is not None:
         params["format_sort"] = [format_sort]
-    if max_duration:
-        params["match_filter"] = match_filter_func(f"duration<={max_duration}")
+    if match_filter := prepare_match_filter(max_duration, max_size_mb):
+        params["match_filter"] = match_filter_func(match_filter)
     return params
 
 
+def prepare_match_filter(max_duration: int | None, max_size_mb: int | None) -> str:
+    match_filter = [
+        f"duration<={max_duration}" if max_duration else None,
+        f"filesize<={max_size_mb}MB" if max_size_mb else None,
+    ]
+    return " & ".join(filter(None, match_filter))
+
+
 def download_file(
-    video_url: str, target: Path, params: dict[str, Any]
+    video_url: str, target: Path, params: dict[str, Any], max_size_mb: int | None = None
 ) -> Path | str | None:
     result: Path | None = None
 
