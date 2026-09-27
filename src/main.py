@@ -110,7 +110,7 @@ def video_params(
 def prepare_match_filter(max_duration: int | None, max_filesize_mb: int | None) -> str:
     match_filter = [
         f"duration<={max_duration}" if max_duration else None,
-        f"filesize<={max_filesize_mb}MB" if max_filesize_mb else None,
+        f"filesize<={max_filesize_mb}M?" if max_filesize_mb else None,
         # "filesize" only applies to individual downloaded files.
         # If final file is merged from multiple others, then it can exceed this limit.
         # However, this is handled by a file size check after the download.
