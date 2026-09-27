@@ -19,9 +19,9 @@ from yt_dlp import YoutubeDL, match_filter_func
 load_dotenv()
 
 DEFAULT_MAX_DURATION = getenv("MAX_DURATION")
+DEFAULT_MAX_SIZE = getenv("MAX_SIZE")
 DEFAULT_FORMAT = getenv("FORMAT")
 DEFAULT_FORMAT_SORT = getenv("FORMAT_SORT")
-DEFAULT_MAX_SIZE = getenv("MAX_SIZE")
 
 TEMP_ROOT = Path(gettempdir()) / "ytdlp-rest-api"
 TEMP_ROOT.mkdir(parents=True, exist_ok=True)
@@ -59,16 +59,16 @@ app = FastAPI(lifespan=lifespan)
 def download(
     video_url: str,
     max_duration: int | None = DEFAULT_MAX_DURATION,
+    max_size_mb: int | None = DEFAULT_MAX_SIZE,
     format: str | None = DEFAULT_FORMAT,
     format_sort: str | None = DEFAULT_FORMAT_SORT,
-    max_size_mb: int | None = DEFAULT_MAX_SIZE,
 ) -> Response:
     logger.info(f"[{video_url}] Received request")
     request_id = str(uuid4())
     target_dir = TemporaryDirectory(prefix=f"{request_id}-", dir=TEMP_ROOT)
     target_path = Path(target_dir.name) / request_id
     try:
-        params = video_params(max_duration, format, format_sort, max_size_mb)
+        params = video_params(max_duration, max_size_mb, format, format_sort)
         result = download_file(video_url, target_path, params, max_size_mb)
         return prepare_response(video_url, result, target_dir)
     except Exception:
@@ -93,17 +93,17 @@ def prepare_response(
 
 def video_params(
     max_duration: int | None,
+    max_size_mb: int | None,
     format: str | None,
     format_sort: str | None,
-    max_size_mb: int | None,
 ) -> dict[str, Any]:
     params = {}
+    if match_filter := prepare_match_filter(max_duration, max_size_mb):
+        params["match_filter"] = match_filter_func(match_filter)
     if format is not None:
         params["format"] = format
     if format_sort is not None:
         params["format_sort"] = [format_sort]
-    if match_filter := prepare_match_filter(max_duration, max_size_mb):
-        params["match_filter"] = match_filter_func(match_filter)
     return params
 
 
@@ -116,7 +116,10 @@ def prepare_match_filter(max_duration: int | None, max_size_mb: int | None) -> s
 
 
 def download_file(
-    video_url: str, target: Path, params: dict[str, Any], max_size_mb: int | None = None
+    video_url: str,
+    target_path: Path,
+    params: dict[str, Any],
+    max_size_mb: int | None = None,
 ) -> Path | str | None:
     result: Path | None = None
 
@@ -125,7 +128,7 @@ def download_file(
         result = Path(path)
 
     final_params = {
-        "outtmpl": f"{target}.%(ext)s",
+        "outtmpl": f"{target_path}.%(ext)s",
         "post_hooks": [capture_path],
         **params,
     }
