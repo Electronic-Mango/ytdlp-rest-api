@@ -144,4 +144,4 @@ def download_file(
 
 
 def size_matches(file: Path, max_size: int | None) -> bool:
-    return max_size is None or (file.stat().st_size / 1_000_000) <= max_size
+    return not max_size or (file.stat().st_size / 1_000_000) <= max_size
