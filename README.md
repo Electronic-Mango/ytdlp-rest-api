@@ -14,7 +14,10 @@ Built with `Python 3.14`,  [`FastAPI`](https://fastapi.tiangolo.com/) and is man
 ## Usage
 
 You can control maximum video duration (in seconds) before API responds with just a thumbnail through `MAX_DURATION` environment variable.
-If `MAX_DURATION` is not set, or set to 0 all videos will be downloaded.
+If `MAX_DURATION` is not set, or set to 0 this filter is not used.
+
+You can also control maximum downloaded file size (in MB) through `MAX_FILESIZE` environment variable - for bigger videos the API will respond with a thumbnail.
+If not set, or set to 0 then this filter is not used.
 
 You can control format of downloaded file through optional `FORMAT` environment variable.
 If it's not set then the best available format is used (which might depend on whether `ffmpeg`) is installed.
