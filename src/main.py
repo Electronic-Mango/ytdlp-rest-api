@@ -21,6 +21,7 @@ load_dotenv()
 DEFAULT_MAX_DURATION = getenv("MAX_DURATION")
 DEFAULT_FORMAT = getenv("FORMAT")
 DEFAULT_FORMAT_SORT = getenv("FORMAT_SORT")
+DEFAULT_MAX_SIZE = getenv("MAX_SIZE")
 
 TEMP_ROOT = Path(gettempdir()) / "ytdlp-rest-api"
 TEMP_ROOT.mkdir(parents=True, exist_ok=True)
@@ -60,6 +61,7 @@ def download(
     max_duration: int | None = DEFAULT_MAX_DURATION,
     format: str | None = DEFAULT_FORMAT,
     format_sort: str | None = DEFAULT_FORMAT_SORT,
+    max_size_mb: int | None = DEFAULT_MAX_SIZE,
 ) -> Response:
     logger.info(f"[{video_url}] Received request")
     request_id = str(uuid4())
@@ -67,7 +69,7 @@ def download(
     target_path = Path(target_dir.name) / request_id
     try:
         params = video_params(max_duration, format, format_sort)
-        result = download_file(video_url, target_path, params)
+        result = download_file(video_url, target_path, params, max_size_mb)
         return prepare_response(video_url, result, target_dir)
     except Exception:
         target_dir.cleanup()
@@ -120,4 +122,10 @@ def download_file(
     }
     with YoutubeDL(final_params) as ytdl:
         info = ytdl.extract_info(video_url, download=True)
-        return result if result and result.is_file() else info.get("thumbnail")
+    if result and result.is_file() and size_matches(result.stat().st_size, max_size_mb):
+        return result
+    return info.get("thumbnail")
+
+
+def size_matches(size_bytes: int, max_size_mb: int | None) -> bool:
+    return max_size_mb is None or (size_bytes / 1_000_000) <= max_size_mb
