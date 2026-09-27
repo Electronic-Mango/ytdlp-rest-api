@@ -51,6 +51,7 @@ You can specify URL to download through **required** query parameter `video_url`
 
 There are also optional query parameters corresponding to configuration environment variables:
  * `max_duration` - maximum duration (in seconds) before API will respond with a thumbnail instead of a video
+ * `max_filesize_mb` - maximum size of downloaded file, in MB, when exceeded the API will respond with a thumbnail
  * `format` - format selected for download, same as `-f`/`--formats` flag in `yt-dlp`
  * `format_sort` - sort order of formats, same as `-S`/`--format-sort` flags in `yt-dlp`
 
