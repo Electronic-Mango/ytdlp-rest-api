@@ -134,6 +134,7 @@ def download_file(
     final_params = {
         "outtmpl": f"{target_path}.%(ext)s",
         "post_hooks": [capture_path],
+        "ignore_no_formats_error": True,
         **params,
     }
     with YoutubeDL(final_params) as ytdl:
