@@ -109,6 +109,8 @@ def video_params(
 
 def prepare_match_filter(max_duration: int | None, max_filesize_mb: int | None) -> str:
     match_filter = [
+        "live_status != is_upcoming",
+        "live_status != is_live",
         f"duration<={max_duration}" if max_duration else None,
         f"filesize_approx<=?{max_filesize_mb}MB" if max_filesize_mb else None,
         # "filesize_approx" should apply to the final, merged file, but since it's only
